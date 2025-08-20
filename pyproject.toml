@@ -1,0 +1,19 @@
+[project]
+name = "eonasbench"
+version = "0.1.0"
+description = "Modular benchmarking framework for ConvNeXt/ViT macro-architectures"
+authors = [
+  { name = "Roberto Del Prete", email = "roberto.delprete@esa.int" }
+]
+requires-python = ">=3.10"
+dependencies = [
+  "torch>=2.0.0",
+  "pyyaml>=6.0",
+  "pytest>=7.0"
+]
+
+[tool.setuptools]
+packages = ["layers", "models", "bench", "tests"]
+
+[project.optional-dependencies]
+profile = ["ptflops>=0.7"]

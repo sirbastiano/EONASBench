@@ -1,0 +1,13 @@
+model:
+  num_classes: 150
+  stem_out: 128
+  stages:
+    - { cells: 3, layer: "vit_window" }
+    - { cells: 3, layer: "vit_encoder" }
+    - { cells: 3, layer: "vit_rpe" }
+  downsample: { type: "maxpool_conv1x1" }
+  head: { type: "upernet+gap" }
+  drop_path_rate: 0.1
+  norm: "layernorm"
+  amp_dtype: "fp16"
+  init: "trunc_normal_0.02"

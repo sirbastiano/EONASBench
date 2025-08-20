@@ -1,0 +1,13 @@
+model:
+  num_classes: 150
+  stem_out: 128
+  stages:
+    - { cells: 3, layer: "convnext_v1" }
+    - { cells: 3, layer: "vit_rpe" }
+    - { cells: 3, layer: "convnext_dil" }
+  downsample: { type: "maxpool_conv1x1" }
+  head: { type: "upernet+gap" }
+  drop_path_rate: 0.2
+  norm: "layernorm"
+  amp_dtype: "bf16"
+  init: "trunc_normal_0.02"

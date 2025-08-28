@@ -40,7 +40,7 @@ class ViTEncoderCell(nn.Module):
         dim_mlp (int): MLP hidden dim.
         drop_path (float): DropPath rate.
     """
-    def __init__(self, C: int, heads: int = 8, dim_mlp: int = None, drop_path: float = 0.0):
+    def __init__(self, C: int, heads: int = 8, dim_mlp: int | None = None, drop_path: float = 0.0):
         super().__init__()
         self.norm1 = nn.LayerNorm(C)
         self.attn = MHSA(C, heads)

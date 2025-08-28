@@ -57,6 +57,9 @@ def build_config_from_string(sequence: str, num_classes: int = 10,
     """
     Build a model config dictionary from a string sequence.
     
+    The sequence is divided into 3 stages to match the backbone architecture.
+    Each stage gets equal number of layers, distributed as evenly as possible.
+    
     Args:
         sequence (str): String pattern where each character is a digit 
                        representing a layer index (e.g., '001045')
@@ -68,14 +71,39 @@ def build_config_from_string(sequence: str, num_classes: int = 10,
         Dict[str, Any]: Model configuration dictionary
         
     Examples:
-        >>> config = build_config_from_string('012', num_classes=5, stem_out=32)
-        >>> # This creates a model with layers: convnext_v1, convnext_se, convnext_dil
+        >>> config = build_config_from_string('001045', num_classes=5, stem_out=32)
+        >>> # This creates 3 stages with layers distributed evenly
+        >>> # Stage 1: 2 layers, Stage 2: 2 layers, Stage 3: 2 layers
     """
     indices = parse_string_sequence(sequence)
     
-    stages = [
-        {"cells": 3, "layer": LAYER_IDS[i]} for i in indices
-    ]
+    # Divide indices into 3 stages for backbone compatibility
+    num_layers = len(indices)
+    base_layers_per_stage = num_layers // 3
+    extra_layers = num_layers % 3
+    
+    stages = []
+    start_idx = 0
+    
+    for stage_idx in range(3):
+        # Distribute extra layers among the first stages
+        layers_in_stage = base_layers_per_stage + (1 if stage_idx < extra_layers else 0)
+        
+        if layers_in_stage == 0:
+            # If no layers for this stage, use the first layer type
+            stage_layers = [indices[0]]
+        else:
+            stage_layers = indices[start_idx:start_idx + layers_in_stage]
+            start_idx += layers_in_stage
+        
+        # For now, use the first layer type in each stage
+        # In the future, we could implement mixed stages or layer combinations
+        primary_layer = LAYER_IDS[stage_layers[0]]
+        
+        stages.append({
+            "cells": 3,
+            "layer": primary_layer
+        })
     
     return {
         "model": {

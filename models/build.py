@@ -22,11 +22,16 @@ class Model(nn.Module):
         head (nn.Module): UPerNet head.
         gap_cls (nn.Module): GAP classifier.
     """
-    def __init__(self, backbone: nn.Module, num_classes: int, out_channels: list):
+    def __init__(self, backbone: nn.Module, num_classes: int, out_channels: list, head_cfg: dict | None = None):
         super().__init__()
+        head_cfg = head_cfg or {}
         self.backbone = backbone
-        self.upernet = UPerNet(in_channels_list=out_channels, num_classes=num_classes)
-        self._final_C = out_channels[-1] if out_channels else 1
+        self.upernet = UPerNet(
+            in_channels_list=out_channels,
+            num_classes=num_classes,
+            lateral_dim=head_cfg.get('lateral_dim', 256),
+        )
+        self._final_C = getattr(backbone, 'final_channels', out_channels[-1] if out_channels else 1)
         self.num_classes = num_classes
         self.gap_cls = nn.Linear(self._final_C, self.num_classes)
 
@@ -63,4 +68,4 @@ def build_model(config: Any) -> nn.Module:
     backbone = Backbone(model_cfg)
     out_channels = backbone.out_channels
     num_classes = model_cfg['num_classes']
-    return Model(backbone, num_classes, out_channels)
+    return Model(backbone, num_classes, out_channels, head_cfg=model_cfg.get('head', {}))

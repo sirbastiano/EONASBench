@@ -47,6 +47,8 @@ def test_custom_sequence():
     seg, cls = out['seg'], out['cls']
     assert seg.shape[0] == 2
     assert seg.shape[1] == 5
+    feats, _ = model.backbone(x)
+    assert seg.shape[2:] == feats[0].shape[2:]
     assert cls.shape == (2, 5)
     print('Custom sequence test passed.')
 

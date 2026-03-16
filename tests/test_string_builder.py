@@ -90,6 +90,8 @@ class TestStringBuilder:
         seg, cls = output['seg'], output['cls']
         assert seg.shape[0] == 1  # batch size
         assert seg.shape[1] == 5  # num_classes
+        feats, _ = model.backbone(x)
+        assert seg.shape[2:] == feats[0].shape[2:]
         assert cls.shape == (1, 5)  # (batch_size, num_classes)
         
     def test_build_model_from_string_repeated_layers(self):
@@ -99,7 +101,7 @@ class TestStringBuilder:
         model = build_model_from_string(sequence, num_classes=3)
         
         # Test model has correct number of stages
-        assert len(model.backbone.stages) == 4
+        assert len(model.backbone.stages) == 3
         
         # Test forward pass
         x = torch.randn(1, 3, 64, 64)

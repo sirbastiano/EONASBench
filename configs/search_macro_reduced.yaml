@@ -1,0 +1,18 @@
+model:
+  profile: "hpc_search"
+  num_classes: 150
+  stem_out: 32
+  stem_stride: 8
+  channels: [32, 64, 128]
+  stages:
+    - { cells: 1, layer: "vit_rpe" }
+    - { cells: 1, layer: "vit_rpe" }
+    - { cells: 2, layer: "vit_rpe" }
+  downsample: { type: "maxpool_conv1x1" }
+  head:
+    type: "upernet+gap"
+    lateral_dim: 64
+  drop_path_rate: 0.1
+  norm: "layernorm"
+  amp_dtype: "bf16"
+  init: "trunc_normal_0.02"

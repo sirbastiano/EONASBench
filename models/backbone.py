@@ -3,8 +3,7 @@ Backbone macro-architecture assembly for benchmarking framework.
 """
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import List, Tuple, Any
+from typing import List
 
 class Conv3x3(nn.Module):
     """
@@ -13,9 +12,9 @@ class Conv3x3(nn.Module):
         in_ch (int): Input channels.
         out_ch (int): Output channels.
     """
-    def __init__(self, in_ch: int, out_ch: int, norm: str = 'batchnorm'):
+    def __init__(self, in_ch: int, out_ch: int, norm: str = 'batchnorm', stride: int = 1):
         super().__init__()
-        self.conv = nn.Conv2d(in_ch, out_ch, 3, stride=1, padding=1, bias=False)
+        self.conv = nn.Conv2d(in_ch, out_ch, 3, stride=stride, padding=1, bias=False)
         self.norm = nn.BatchNorm2d(out_ch)
         self.act = nn.GELU()
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -26,11 +25,11 @@ class Conv3x3(nn.Module):
 
 
 class Downsample(nn.Module):
-    """MaxPool2d + 1x1 Conv to double channels."""
-    def __init__(self, C: int):
+    """MaxPool2d + 1x1 Conv to change channels."""
+    def __init__(self, in_ch: int, out_ch: int):
         super().__init__()
         self.pool = nn.MaxPool2d(2, 2)
-        self.proj = nn.Conv2d(C, 2*C, 1, bias=False)
+        self.proj = nn.Conv2d(in_ch, out_ch, 1, bias=False)
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.pool(x)
         x = self.proj(x)
@@ -64,19 +63,39 @@ class Backbone(nn.Module):
     def __init__(self, cfg: dict):
         super().__init__()
         from layers.registry import build_cell
-        C = cfg['stem_out']
-        self.stem = Conv3x3(3, C, norm=cfg.get('norm', 'layernorm'))
+        channels = cfg.get('channels')
+        if channels is None:
+            channels = [cfg['stem_out'] * (2 ** i) for i in range(len(cfg['stages']))]
+        if len(channels) != len(cfg['stages']):
+            raise ValueError("Length of 'channels' must match number of stages")
+
+        stem_stride = cfg.get('stem_stride', 1)
+        C = channels[0]
+        self.stem = Conv3x3(3, C, norm=cfg.get('norm', 'layernorm'), stride=stem_stride)
         self.stages = nn.ModuleList()
         self.downs = nn.ModuleList()
-        drop_path = torch.linspace(0, cfg['drop_path_rate'], 3*len(cfg['stages'])).tolist()
+        total_cells = sum(stage['cells'] for stage in cfg['stages'])
+        drop_path = torch.linspace(0, cfg['drop_path_rate'], total_cells).tolist() if total_cells else []
         k = 0
-        for s in cfg['stages']:
-            builder = lambda C, drop_path: build_cell(s['layer'], C, drop_path=drop_path)
-            self.stages.append(Stage(C, builder, cells=s['cells'], drop_path_slice=drop_path[k:k+s['cells']]))
+        for stage_idx, s in enumerate(cfg['stages']):
+            stage_channels = channels[stage_idx]
+            cell_kwargs = s.get('cell_kwargs', {})
+            builder = lambda C, drop_path, layer=s['layer'], kwargs=cell_kwargs: build_cell(
+                layer, C, drop_path=drop_path, **kwargs
+            )
+            self.stages.append(
+                Stage(
+                    stage_channels,
+                    builder,
+                    cells=s['cells'],
+                    drop_path_slice=drop_path[k:k + s['cells']],
+                )
+            )
             k += s['cells']
-            self.downs.append(Downsample(C))
-            C *= 2
-        self.out_channels = [cfg['stem_out'] * (2**i) for i in range(3)]
+            next_channels = channels[stage_idx + 1] if stage_idx + 1 < len(channels) else stage_channels * 2
+            self.downs.append(Downsample(stage_channels, next_channels))
+        self.out_channels = channels
+        self.final_channels = channels[-1] * 2 if channels else 1
     def forward(self, x: torch.Tensor):
         feats = []
         x = self.stem(x)

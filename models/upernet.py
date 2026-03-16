@@ -24,6 +24,7 @@ class UPerNet(nn.Module):
     """
     def __init__(self, in_channels_list: List[int], num_classes: int, lateral_dim: int = 256):
         super().__init__()
+        self.lateral_dim = lateral_dim
         self.laterals = nn.ModuleList([
             LateralConv(c, lateral_dim) for c in in_channels_list
         ])

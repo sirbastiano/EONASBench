@@ -61,7 +61,20 @@ python -m bench.test_sequence_cli --seq 0 1 2 --img 64 64
 ```
 
 ## Config examples
-See `configs/variant_a.yaml` and `configs/variant_b.yaml` for macro-architecture variants.
+See `configs/variant_a.yaml`, `configs/variant_b.yaml`, and `configs/search_macro_reduced.yaml` for macro-architecture variants.
+
+## HPC Reduced Macro Verification
+The reduced HPC search profile keeps segmentation and all six operators, but changes the macro-scheme:
+- `stem_stride: 8`
+- `channels: [32, 64, 128]`
+- stage depths `[1, 1, 2]`
+- `head.lateral_dim: 64`
+
+Run the verification utility on a CUDA node to record measured VRAM and throughput under `outputs/baseline/<timestamp>/`:
+
+```bash
+python -m bench.verify_hpc_profile --config configs/search_macro_reduced.yaml --img 256 256 --dtype bf16
+```
 
 ## String-Based Model Builder
 

@@ -7,7 +7,8 @@ from models.build import build_model
 
 @pytest.mark.parametrize("config_path", [
     "configs/variant_a.yaml",
-    "configs/variant_b.yaml"
+    "configs/variant_b.yaml",
+    "configs/search_macro_reduced.yaml",
 ])
 def test_model_shapes(config_path):
     model = build_model(config_path)
@@ -19,16 +20,22 @@ def test_model_shapes(config_path):
     # Check segmentation output shape
     assert seg.shape[0] == 2
     assert seg.shape[1] == model.upernet.seg_head.out_channels
-    assert seg.shape[2] == 64 and seg.shape[3] == 64  # H/4, W/4 for 256x256 input
     # Check classifier output shape
     assert cls.shape == (2, model.gap_cls.out_features)
     # Check backbone feature shapes
     feats, _ = model.backbone(x)
-    assert len(feats) == 3
-    C1, C2, C3 = model.backbone.out_channels
-    assert feats[0].shape[1] == C1
-    assert feats[1].shape[1] == C2
-    assert feats[2].shape[1] == C3
-    assert feats[0].shape[2:] == (128, 128)
-    assert feats[1].shape[2:] == (64, 64)
-    assert feats[2].shape[2:] == (32, 32)
+    assert len(feats) == len(model.backbone.out_channels)
+    assert seg.shape[2:] == feats[0].shape[2:]
+
+    for idx, feat in enumerate(feats):
+        assert feat.shape[1] == model.backbone.out_channels[idx]
+
+    for prev, curr in zip(feats, feats[1:]):
+        assert curr.shape[2] == prev.shape[2] // 2
+        assert curr.shape[3] == prev.shape[3] // 2
+
+
+def test_reduced_profile_head_width():
+    model = build_model("configs/search_macro_reduced.yaml")
+    assert model.upernet.lateral_dim == 64
+    assert model.backbone.out_channels == [32, 64, 128]

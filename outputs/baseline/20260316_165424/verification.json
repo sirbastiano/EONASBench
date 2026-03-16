@@ -1,0 +1,46 @@
+{
+  "environment": {
+    "timestamp": "2026-03-16T16:54:24.647074",
+    "config_path": "configs/search_macro_reduced.yaml",
+    "python": "3.12.12 | packaged by conda-forge | (main, Oct 22 2025, 23:34:53) [Clang 19.1.7 ]",
+    "platform": "macOS-26.2-arm64-arm-64bit",
+    "torch": "2.6.0",
+    "cuda": null,
+    "cudnn": null,
+    "gpu_name": null,
+    "dtype": "torch.bfloat16",
+    "git_commit": "0d7f1b726e947057d2fa8695809559bd96d896de"
+  },
+  "analytic_estimate": {
+    "dtype_bytes": 2,
+    "stage1_attention_bytes": 16777216,
+    "stage1_attention_mb": 16.0,
+    "saved_attention_activations_mb": [
+      120,
+      180
+    ],
+    "backbone_activations_mb": [
+      80,
+      120
+    ],
+    "upernet_activations_mb": [
+      80,
+      120
+    ],
+    "params_grads_optimizer_mb": [
+      50,
+      150
+    ],
+    "runtime_margin_mb": [
+      250,
+      350
+    ],
+    "estimated_peak_vram_mb": [
+      600,
+      900
+    ],
+    "hard_limit_vram_mb": 1024
+  },
+  "runs": [],
+  "error": "CUDA is not available; measured VRAM verification requires a GPU."
+}
